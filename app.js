@@ -25,24 +25,14 @@ app.get(
     '/api/v1/users/posts',
     async (req, res) => {
         // check cache
-        // await connectRedisClient()
-        const cachedData = await client.get('posts')
-        console.log(cachedData)
-        if(!cachedData) {
-            const response = await fetch('https://jsonplaceholder.typicode.com/users/1/posts')
-            const data = await response.json()
-            await client.setEx(
-                'posts',
-                DEFAULT_EXPIRATION,
-                JSON.stringify(data)
-            )
-            return res.send(data)
-        }
-        return res.send(
-            JSON.parse(
-                cachedData
-            )
+        const data = await getSetCachedData(
+            'posts',
+            async () => {
+                const response = await fetch('https://jsonplaceholder.typicode.com/users/1/posts')
+                return await response.json()
+            }
         )
+        res.send(data)
     }
 )
 app.get(
@@ -77,6 +67,30 @@ async function cacheMiddleware(req, res, next) {
 async function connectRedisClient() {
     // must connect client before use
     await client.connect()
+}
+
+async function getSetCachedData(
+    key,
+    callback
+) {
+    return new Promise(
+        async (resolve, reject) => {
+            const data = await client.get(key)
+            if(data instanceof Error) {
+                reject(data)
+            }
+            if(!data) {
+                const newData = await callback()
+                client.setEx(
+                    key,
+                    DEFAULT_EXPIRATION,
+                    JSON.stringify(newData)
+                )
+                resolve(newData)
+            }
+            resolve(JSON.parse(data))
+        }
+    )
 }
 
 app.listen(3000, () => {
