@@ -12,7 +12,7 @@ const DEFAULT_EXPIRATION = 3600
     url: 'redis://localhost:6380'
 }); */
 
-client.on('error', (err) => console.log('Redis Client Error', err));
+client.on('error', (err) => console.log('Redis Client Error', err))
 
 app.use(
     urlencoded(
@@ -21,6 +21,7 @@ app.use(
         }
     )
 )
+
 app.get(
     '/api/v1/users/posts',
     async (req, res) => {
@@ -35,6 +36,7 @@ app.get(
         res.send(data)
     }
 )
+
 app.get(
     '/api/v1/posts/:id/comments',
     cacheMiddleware,
@@ -47,6 +49,14 @@ app.get(
             DEFAULT_EXPIRATION,
             JSON.stringify(data)
         )
+        return res.send(data)
+    }
+)
+
+app.post(
+    '/api/v1/array',
+    async (req, res) => {
+        
         return res.send(data)
     }
 )
@@ -95,4 +105,4 @@ async function getSetCachedData(
 
 app.listen(3000, () => {
     console.log('Express App Running')
-})
+});
